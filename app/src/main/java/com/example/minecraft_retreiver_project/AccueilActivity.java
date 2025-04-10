@@ -40,14 +40,15 @@ public class AccueilActivity extends AppCompatActivity {
     private DBHandler dbHandler;
     private Button addServerButton, addFirstServerButton, suggestServersButton;
     private SwipeRefreshLayout swipeRefreshLayout;
-
     private ImageButton logOutImageButton;
 
+    /**
+     * Lanceur d'activité pour refresh la page quand un serveur est ajouté.
+     */
     private final ActivityResultLauncher<Intent> addServerLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK) {
-                    // Refresh the server list
                     String userEmail = getIntent().getStringExtra("USER_EMAIL");
                     checkUserServers(userEmail);
                 }
@@ -82,13 +83,17 @@ public class AccueilActivity extends AppCompatActivity {
         // Initialisation des boutons avec l'email passé en paramètres
         setupButtons(userEmail);
 
-        // Reinitialisation afin de refresh la liste des serveurs avec l'email passé en paramètres.
+        // Réinitialisation afin de rafraîchir la liste des serveurs avec l'email passé en paramètres
         swipeRefreshLayout.setOnRefreshListener(() -> checkUserServers(userEmail));
 
-        // Vérification si l'utilisateur à des serveurs afin de modifier le layout en conséquence.
+        // Vérification si l'utilisateur a des serveurs afin de modifier le layout en conséquence
         checkUserServers(userEmail);
     }
 
+    /**
+     * Configure les boutons de l'interface utilisateur.
+     * @param userEmail L'email de l'utilisateur connecté.
+     */
     private void setupButtons(String userEmail) {
         addServerButton.setOnClickListener(v -> {
             Intent intent = new Intent(AccueilActivity.this, AddServerActivity.class);
@@ -105,6 +110,10 @@ public class AccueilActivity extends AppCompatActivity {
         logOutImageButton.setOnClickListener(v -> logoutUser());
     }
 
+    /**
+     * Vérifie et affiche les serveurs de l'utilisateur.
+     * @param userEmail L'email de l'utilisateur connecté.
+     */
     private void checkUserServers(String userEmail) {
         progressBar.setVisibility(View.VISIBLE);
         serversScrollView.setVisibility(View.GONE);
@@ -137,7 +146,7 @@ public class AccueilActivity extends AppCompatActivity {
                         serverNameTextView.setText(server.getNom());
                         serverDescriptionTextView.setText(server.getMotd());
 
-                        // Fetch server icon
+                        // Récupération de l'icône du serveur
                         fetchServerIcon(server.getIp(), serverImg);
 
                         serverView.setOnClickListener(v -> fetchServerDetails(server.getIp()));
@@ -150,6 +159,11 @@ public class AccueilActivity extends AppCompatActivity {
         }).start();
     }
 
+    /**
+     * Récupère l'icône du serveur à partir de l'API.
+     * @param serverIp L'adresse IP du serveur.
+     * @param serverImg L'ImageView où l'icône sera affichée.
+     */
     private void fetchServerIcon(String serverIp, ImageView serverImg) {
         String iconUrl = "https://api.mcstatus.io/v2/icon/" + serverIp;
 
@@ -169,6 +183,10 @@ public class AccueilActivity extends AppCompatActivity {
         }).start();
     }
 
+    /**
+     * Récupère les détails du serveur à partir de l'API.
+     * @param serverIp L'adresse IP du serveur.
+     */
     private void fetchServerDetails(String serverIp) {
         String apiUrl = "https://api.mcstatus.io/v2/status/java/" + serverIp;
 
@@ -200,22 +218,25 @@ public class AccueilActivity extends AppCompatActivity {
                             intent.putExtra("MOTD", motd);
                             intent.putExtra("PLAYERS_ONLINE", playersOnline);
                             intent.putExtra("MAX_PLAYERS", maxPlayers);
-                            intent.putExtra("SERVER_IP", serverIp); // Pass the server IP
+                            intent.putExtra("SERVER_IP", serverIp); // Passer l'adresse IP du serveur
                             startActivity(intent);
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
                     });
                 } else {
-                    runOnUiThread(() -> Toast.makeText(this, "Failed to fetch server details", Toast.LENGTH_SHORT).show());
+                    runOnUiThread(() -> Toast.makeText(this, "Échec de la récupération des détails du serveur", Toast.LENGTH_SHORT).show());
                 }
             } catch (IOException e) {
                 e.printStackTrace();
-                runOnUiThread(() -> Toast.makeText(this, "Error connecting to the server", Toast.LENGTH_SHORT).show());
+                runOnUiThread(() -> Toast.makeText(this, "Erreur de connexion au serveur", Toast.LENGTH_SHORT).show());
             }
         }).start();
     }
 
+    /**
+     * Déconnecte l'utilisateur et retourne à l'écran de connexion.
+     */
     private void logoutUser() {
         Intent intent = new Intent(AccueilActivity.this, MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
