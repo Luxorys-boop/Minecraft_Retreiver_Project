@@ -47,14 +47,30 @@
                 android:textColor="@android:color/darker_gray"
                 android:drawablePadding="8dp"/>
 
-            <Button
-                android:id="@+id/deleteServerButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:text="Delete Server"
-                android:textColor="@android:color/holo_red_light"
-                android:layout_marginTop="16dp"/>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/deleteServerButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="16dp"
+                    android:text="Delete Server"
+                    android:textColor="@android:color/holo_red_light" />
+
+                <Button
+                    android:id="@+id/shareServerButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="8dp"
+                    android:text="Share Server"
+                    android:textColor="@android:color/holo_blue_dark" />
+            </LinearLayout>
+
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 </RelativeLayout>

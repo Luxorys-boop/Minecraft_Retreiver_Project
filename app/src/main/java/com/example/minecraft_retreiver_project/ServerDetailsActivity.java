@@ -1,6 +1,7 @@
 package com.example.minecraft_retreiver_project;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
@@ -17,6 +18,11 @@ public class ServerDetailsActivity extends AppCompatActivity {
 
     private DBHandler dbHandler;
     private String serverIp;
+    private TextView motdTextView;
+    private TextView playersTextView;
+    private ImageView serverLogo;
+    private Button deleteServerButton;
+    private Button shareServerButton;
 
     /**
      * Création de l'activité, début de son cycle de vie. Initialisation de la BDD et des vues.
@@ -48,17 +54,24 @@ public class ServerDetailsActivity extends AppCompatActivity {
             return;
         }
 
+
+
         // Ajout du serveur avec ses détails.
-        TextView motdTextView = findViewById(R.id.motdTextView);
-        TextView playersTextView = findViewById(R.id.playersTextView);
-        ImageView serverLogo = findViewById(R.id.serverLogo);
-        Button deleteServerButton = findViewById(R.id.deleteServerButton);
+        motdTextView = findViewById(R.id.motdTextView);
+        playersTextView = findViewById(R.id.playersTextView);
+        serverLogo = findViewById(R.id.serverLogo);
+        deleteServerButton = findViewById(R.id.deleteServerButton);
+        shareServerButton = findViewById(R.id.shareServerButton);
+
 
         motdTextView.setText(motd);
         playersTextView.setText("Players Online: " + playersOnline + "/" + maxPlayers);
 
         // Récupération du logo du serveur
         fetchServerIcon(serverIp, serverLogo);
+
+        // Ajout d'un bouton pour partager le serveur à ses amis !
+        shareServerButton.setOnClickListener(v -> shareServerDetails());
 
         // Ajout d'un bouton pour supprimer le serveur.
         deleteServerButton.setOnClickListener(v -> deleteServer());
@@ -86,6 +99,26 @@ public class ServerDetailsActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }).start();
+    }
+
+    /**
+     * Partage les détails du serveur via une application externe (WhatsApp, Gmail, etc.).
+     */
+    private void shareServerDetails() {
+        String motd = getIntent().getStringExtra("MOTD");
+        String shareText = "Regarde ce serveur Minecraft !\n\n" +
+                "IP: " + serverIp + "\n\n" +
+                "MOTD: " + motd + "\n\n" +
+                "Joueurs connectés : " + getIntent().getIntExtra("PLAYERS_ONLINE", 0) +
+                "/" + getIntent().getIntExtra("MAX_PLAYERS", 0);
+
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain"); // Type MIME pour du texte
+        shareIntent.putExtra(Intent.EXTRA_TEXT, shareText);
+        shareIntent.putExtra(Intent.EXTRA_SUBJECT, "Minecraft Server: " + serverIp);
+
+        // Lance le sélecteur d'applications de partage - INTENT IMPLICITE
+        startActivity(Intent.createChooser(shareIntent, "Partager via"));
     }
 
     /**

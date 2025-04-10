@@ -59,7 +59,7 @@ public class AccueilActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_accueil);
 
-        // Initialize views
+        // Initialisation des vues
         noServersLayout = findViewById(R.id.noServersLayout);
         serversScrollView = findViewById(R.id.serversScrollView);
         progressBar = findViewById(R.id.progressBar);
@@ -71,7 +71,7 @@ public class AccueilActivity extends AppCompatActivity {
 
         dbHandler = new DBHandler(this);
 
-        // Get the logged-in user's email
+        // Récupération de l'email de l'utilisateur
         String userEmail = getIntent().getStringExtra("USER_EMAIL");
         if (userEmail == null || userEmail.isEmpty()) {
             Toast.makeText(this, "Erreur: utilisateur non identifié", Toast.LENGTH_SHORT).show();
@@ -79,13 +79,13 @@ public class AccueilActivity extends AppCompatActivity {
             return;
         }
 
-        // Set up buttons
+        // Initialisation des boutons avec l'email passé en paramètres
         setupButtons(userEmail);
 
-        // Set up SwipeRefreshLayout
+        // Reinitialisation afin de refresh la liste des serveurs avec l'email passé en paramètres.
         swipeRefreshLayout.setOnRefreshListener(() -> checkUserServers(userEmail));
 
-        // Check servers
+        // Vérification si l'utilisateur à des serveurs afin de modifier le layout en conséquence.
         checkUserServers(userEmail);
     }
 

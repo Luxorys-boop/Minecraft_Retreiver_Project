@@ -30,6 +30,11 @@ public class DBHandler extends SQLiteOpenHelper {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
     @Override
+
+    /**
+     * Crée les tables de la base de données lors de la première installation
+     * @param db La base de données SQLite
+     */
     public void onCreate(SQLiteDatabase db) {
         String query =  "CREATE TABLE " + DBContract.FormUsers.TABLE_NAME + " (" +
                 DBContract.FormUsers._USERID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -56,7 +61,12 @@ public class DBHandler extends SQLiteOpenHelper {
         db.execSQL(query3);
     }
 
-
+    /**
+     * Met à jour la base de données lors d'un changement de version
+     * @param db La base de données SQLite
+     * @param oldVersion Ancienne version de la base
+     * @param newVersion Nouvelle version de la base
+     */
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         // Suppression de toutes les tables
@@ -67,6 +77,13 @@ public class DBHandler extends SQLiteOpenHelper {
         onCreate(db);
     }
 
+    /**
+     * Enregistre un nouvel utilisateur dans la base de données
+     * @param email L'email de l'utilisateur
+     * @param plainPassword Le mot de passe en clair (sera hashé)
+     * @param pseudo Le pseudonyme de l'utilisateur
+     * @return true si l'inscription a réussi, false sinon
+     */
     public boolean registerUser(String email, String plainPassword, String pseudo) {
         // Chiffrer le mot de passe
         String hashedPassword = BCrypt.hashpw(plainPassword, BCrypt.gensalt());
@@ -81,6 +98,12 @@ public class DBHandler extends SQLiteOpenHelper {
         return result != -1;
     }
 
+    /**
+     * Vérifie les identifiants de connexion d'un utilisateur
+     * @param email L'email de l'utilisateur
+     * @param plainPassword Le mot de passe en clair à vérifier
+     * @return true si les identifiants sont valides, false sinon
+     */
     public boolean checkUser(String email, String plainPassword) {
 
         SQLiteDatabase db = this.getReadableDatabase();
@@ -108,6 +131,11 @@ public class DBHandler extends SQLiteOpenHelper {
         return false;
     }
 
+    /**
+     * Récupère la liste des serveurs associés à un utilisateur
+     * @param userEmail L'email de l'utilisateur
+     * @return Liste des serveurs de l'utilisateur
+     */
     public List<Servers> getUserServers(String userEmail) {
         List<Servers> serversList = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
@@ -141,7 +169,11 @@ public class DBHandler extends SQLiteOpenHelper {
         return serversList;
     }
 
-
+    /**
+     * Récupère l'ID d'un utilisateur à partir de son email
+     * @param email L'email de l'utilisateur
+     * @return L'ID de l'utilisateur ou -1 si non trouvé
+     */
     public int getUserIdByEmail(String email) {
         SQLiteDatabase db = this.getReadableDatabase();
         String[] columns = {DBContract.FormUsers._USERID};
@@ -163,14 +195,20 @@ public class DBHandler extends SQLiteOpenHelper {
         return userId;
     }
 
-    // Méthode pour créer un utilisateur exemple
+    /**
+     * Crée un utilisateur exemple dans la base de données
+     */
     public void createExampleUser() {
         if (!userExists("example@gmail.com")) {
             registerUser("example@gmail.com", "haha", "ExempleUser");
         }
     }
 
-    // Méthode pour vérifier si un utilisateur existe
+    /**
+     * Vérifie si un utilisateur existe dans la base
+     * @param email L'email à vérifier
+     * @return true si l'utilisateur existe, false sinon
+     */
     public boolean userExists(String email) {
         SQLiteDatabase db = this.getReadableDatabase();
         String query = "SELECT * FROM " + DBContract.FormUsers.TABLE_NAME +
@@ -181,7 +219,9 @@ public class DBHandler extends SQLiteOpenHelper {
         return exists;
     }
 
-    // Méthode pour ajouter un serveur exemple
+    /**
+     * Ajoute un serveur exemple dans la base de données
+     */
     public void addExampleServer() {
         SQLiteDatabase db = this.getWritableDatabase();
 
@@ -204,7 +244,11 @@ public class DBHandler extends SQLiteOpenHelper {
         }
     }
 
-    // Méthode pour vérifier si un serveur existe
+    /**
+     * Vérifie si un serveur existe dans la base
+     * @param serverName Le nom du serveur à vérifier
+     * @return true si le serveur existe, false sinon
+     */
     public boolean serverExists(String serverName) {
         SQLiteDatabase db = this.getReadableDatabase();
         String query = "SELECT * FROM " + DBContract.FormServers.TABLE_NAME +
@@ -215,6 +259,14 @@ public class DBHandler extends SQLiteOpenHelper {
         return exists;
     }
 
+    /**
+     * Ajoute un nouveau serveur à la base et l'associe à un utilisateur
+     * @param name Le nom du serveur
+     * @param ip L'adresse IP du serveur
+     * @param motd Le message du serveur (MOTD)
+     * @param userId L'ID de l'utilisateur propriétaire
+     * @return L'ID du serveur créé ou -1 en cas d'erreur
+     */
     public long addServer(String name, String ip, String motd, int userId) {
         SQLiteDatabase db = this.getWritableDatabase();
         long serverId = -1;
@@ -270,6 +322,10 @@ public class DBHandler extends SQLiteOpenHelper {
         return serverId;
     }
 
+    /**
+     * Récupère une liste de serveurs suggérés/prédéfinis
+     * @return Liste des serveurs populaires
+     */
     public List<Servers> getServeursSuggeres() {
         List<Servers> serveursSugerres = new ArrayList<>();
 
@@ -294,7 +350,11 @@ public class DBHandler extends SQLiteOpenHelper {
     }
 
 
-
+    /**
+     * Supprime un serveur de la base de données par son adresse IP
+     * @param serverIp L'adresse IP du serveur à supprimer
+     * @return true si la suppression a réussi, false sinon
+     */
     public boolean deleteServerByIp(String serverIp) {
         SQLiteDatabase db = this.getWritableDatabase();
         db.beginTransaction();

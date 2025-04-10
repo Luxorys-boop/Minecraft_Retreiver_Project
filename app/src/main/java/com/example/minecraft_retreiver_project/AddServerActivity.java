@@ -1,6 +1,10 @@
 package com.example.minecraft_retreiver_project;
 
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -29,17 +33,19 @@ import java.util.concurrent.Executors;
 
 public class AddServerActivity extends AppCompatActivity {
 
+
+    private NetworkMonitor networkMonitor;
+    private ConnectivityManager connectivityManager;
+    private DBHandler dbHandler;
+
+    private String serverName, serverIp, serverMotd;
+    private int onlinePlayers, maxPlayers;
     private TextInputEditText serverAddressEditText;
     private ProgressBar progressBar;
     private LinearLayout serverInfoLayout;
     private TextView serverNameText, serverMotdText, serverPlayersText, serverVersionText;
     private Button saveServerButton;
     private Button confirmAddButton;
-    private DBHandler dbHandler;
-
-    private String serverName, serverIp, serverMotd;
-    private int onlinePlayers, maxPlayers;
-
     private ExecutorService executorService;
     private Handler mainHandler;
 
@@ -65,6 +71,33 @@ public class AddServerActivity extends AppCompatActivity {
 
         saveServerButton.setOnClickListener(v -> fetchServerInfo());
         confirmAddButton.setOnClickListener(v -> addServerToDatabase());
+    }
+
+
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        // Initialisation
+        connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        networkMonitor = new NetworkMonitor(this);
+
+        // Configuration de la requête réseau
+        NetworkRequest request = new NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build();
+
+        // Enregistrement
+        connectivityManager.registerNetworkCallback(request, networkMonitor);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // Désenregistrement pour éviter les fuites mémoire
+        if (connectivityManager != null && networkMonitor != null) {
+            connectivityManager.unregisterNetworkCallback(networkMonitor);
+        }
     }
 
     private void fetchServerInfo() {
