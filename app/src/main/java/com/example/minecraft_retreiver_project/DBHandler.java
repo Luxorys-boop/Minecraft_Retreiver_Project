@@ -1,5 +1,13 @@
 package com.example.minecraft_retreiver_project;
 
+import static com.example.minecraft_retreiver_project.DBContract.FormServers.COLUMN_IP;
+import static com.example.minecraft_retreiver_project.DBContract.FormServers.COLUMN_MOTD;
+import static com.example.minecraft_retreiver_project.DBContract.FormServers.COLUMN_NAME;
+import static com.example.minecraft_retreiver_project.DBContract.FormServers._SERVERID;
+import static com.example.minecraft_retreiver_project.DBContract.UserServerRelation.COLUMN_SERVER_ID;
+import static com.example.minecraft_retreiver_project.DBContract.UserServerRelation.COLUMN_USER_ID;
+import static com.example.minecraft_retreiver_project.DBContract.UserServerRelation._ID;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -31,20 +39,20 @@ public class DBHandler extends SQLiteOpenHelper {
         db.execSQL(query);
 
         String query2 =  "CREATE TABLE " + DBContract.FormServers.TABLE_NAME + " (" +
-                DBContract.FormServers._SERVERID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
-                DBContract.FormServers.COLUMN_NAME + " TEXT," +
-                DBContract.FormServers.COLUMN_IP+ " TEXT," +
-                DBContract.FormServers.COLUMN_MOTD + " TEXT)";
+                _SERVERID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
+                COLUMN_NAME + " TEXT," +
+                COLUMN_IP+ " TEXT," +
+                COLUMN_MOTD + " TEXT)";
         db.execSQL(query2);
 
         String query3 = "CREATE TABLE " + DBContract.UserServerRelation.TABLE_NAME + " (" +
-                DBContract.UserServerRelation._ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
-                DBContract.UserServerRelation.COLUMN_USER_ID + " BIGINT," +
-                DBContract.UserServerRelation.COLUMN_SERVER_ID + " BIGINT," +
-                "FOREIGN KEY(" + DBContract.UserServerRelation.COLUMN_USER_ID + ") REFERENCES " +
+                _ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
+                COLUMN_USER_ID + " BIGINT," +
+                COLUMN_SERVER_ID + " BIGINT," +
+                "FOREIGN KEY(" + COLUMN_USER_ID + ") REFERENCES " +
                 DBContract.FormUsers.TABLE_NAME + "(" + DBContract.FormUsers._USERID + ")," +
-                "FOREIGN KEY(" + DBContract.UserServerRelation.COLUMN_SERVER_ID + ") REFERENCES " +
-                DBContract.FormServers.TABLE_NAME + "(" + DBContract.FormServers._SERVERID + "))";
+                "FOREIGN KEY(" + COLUMN_SERVER_ID + ") REFERENCES " +
+                DBContract.FormServers.TABLE_NAME + "(" + _SERVERID + "))";
         db.execSQL(query3);
     }
 
@@ -74,10 +82,13 @@ public class DBHandler extends SQLiteOpenHelper {
     }
 
     public boolean checkUser(String email, String plainPassword) {
+
         SQLiteDatabase db = this.getReadableDatabase();
+
         String[] columns = {DBContract.FormUsers.COLUMN_PASSWD};
         String selection = DBContract.FormUsers.COLUMN_EMAIL + " = ?";
         String[] selectionArgs = {email};
+
 
         Cursor cursor = db.query(
                 DBContract.FormUsers.TABLE_NAME,
@@ -92,16 +103,248 @@ public class DBHandler extends SQLiteOpenHelper {
             Log.d("JE PASSE ICI", "JE PASSE ICI ENFT");
             return BCrypt.checkpw(plainPassword, hashedPassword);
         }
-        cursor.close();
 
+        cursor.close();
         return false;
     }
 
+    public List<Servers> getUserServers(String userEmail) {
+        List<Servers> serversList = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
 
-    public void deleteFormID (int id){
+        try {
+            String query = "SELECT s.* FROM " + DBContract.FormServers.TABLE_NAME + " s " +
+                    "INNER JOIN " + DBContract.UserServerRelation.TABLE_NAME + " usr ON s." +
+                    DBContract.FormServers._SERVERID + " = usr." + DBContract.UserServerRelation.COLUMN_SERVER_ID + " " +
+                    "INNER JOIN " + DBContract.FormUsers.TABLE_NAME + " u ON usr." +
+                    DBContract.UserServerRelation.COLUMN_USER_ID + " = u." + DBContract.FormUsers._USERID + " " +
+                    "WHERE u." + DBContract.FormUsers.COLUMN_EMAIL + " = ?";
+
+            Cursor cursor = db.rawQuery(query, new String[]{userEmail});
+
+            if (cursor.moveToFirst()) {
+                do {
+                    Servers server = new Servers();
+                    server.setNom(cursor.getString(cursor.getColumnIndexOrThrow(DBContract.FormServers.COLUMN_NAME)));
+                    server.setIp(cursor.getString(cursor.getColumnIndexOrThrow(DBContract.FormServers.COLUMN_IP)));
+                    server.setMotd(cursor.getString(cursor.getColumnIndexOrThrow(DBContract.FormServers.COLUMN_MOTD)));
+                    serversList.add(server);
+                    Log.d("DBHandler", "Server ajouté a liste: " + server.getNom());
+                } while (cursor.moveToNext());
+            } else {
+                Log.d("DBHandler", "Aucun serveur pour l'utilisateur : " + userEmail);
+            }
+            cursor.close();
+        } catch (Exception e) {
+            Log.e("DB_ERROR", "Erreur de récupération données utilisateur", e);
+        }
+        return serversList;
+    }
+
+
+    public int getUserIdByEmail(String email) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String[] columns = {DBContract.FormUsers._USERID};
+        String selection = DBContract.FormUsers.COLUMN_EMAIL + " = ?";
+        String[] selectionArgs = {email};
+
+        Cursor cursor = db.query(
+                DBContract.FormUsers.TABLE_NAME,
+                columns,
+                selection,
+                selectionArgs,
+                null, null, null);
+
+        int userId = -1;
+        if (cursor.moveToFirst()) {
+            userId = cursor.getInt(0);
+        }
+        cursor.close();
+        return userId;
+    }
+
+    // Méthode pour créer un utilisateur exemple
+    public void createExampleUser() {
+        if (!userExists("example@gmail.com")) {
+            registerUser("example@gmail.com", "haha", "ExempleUser");
+        }
+    }
+
+    // Méthode pour vérifier si un utilisateur existe
+    public boolean userExists(String email) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String query = "SELECT * FROM " + DBContract.FormUsers.TABLE_NAME +
+                " WHERE " + DBContract.FormUsers.COLUMN_EMAIL + " = ?";
+        Cursor cursor = db.rawQuery(query, new String[]{email});
+        boolean exists = cursor.getCount() > 0;
+        cursor.close();
+        return exists;
+    }
+
+    // Méthode pour ajouter un serveur exemple
+    public void addExampleServer() {
         SQLiteDatabase db = this.getWritableDatabase();
-     }
+
+        // Vérifier si le serveur existe déjà
+        if (!serverExists("Hypixel")) {
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_NAME, "Hypixel");
+            values.put(COLUMN_IP, "play.hypixel.net");
+            values.put(COLUMN_MOTD, "The largest Minecraft server!");
+            long serverId = db.insert(DBContract.FormServers.TABLE_NAME, null, values);
+
+            // Associer au compte exemple
+            int userId = getUserIdByEmail("example@gmail.com");
+            if (userId != -1 && serverId != -1) {
+                ContentValues relationValues = new ContentValues();
+                relationValues.put(COLUMN_USER_ID, userId);
+                relationValues.put(COLUMN_SERVER_ID, serverId);
+                db.insert(DBContract.UserServerRelation.TABLE_NAME, null, relationValues);
+            }
+        }
+    }
+
+    // Méthode pour vérifier si un serveur existe
+    public boolean serverExists(String serverName) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        String query = "SELECT * FROM " + DBContract.FormServers.TABLE_NAME +
+                " WHERE " + COLUMN_NAME + " = ?";
+        Cursor cursor = db.rawQuery(query, new String[]{serverName});
+        boolean exists = cursor.getCount() > 0;
+        cursor.close();
+        return exists;
+    }
+
+    public long addServer(String name, String ip, String motd, int userId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        long serverId = -1;
+
+        try {
+            // Vérifier si le serveur existe déjà
+            Cursor cursor = db.query(
+                    DBContract.FormServers.TABLE_NAME,
+                    new String[]{_SERVERID},
+                    COLUMN_IP + " = ?",
+                    new String[]{ip},
+                    null, null, null
+            );
+
+            if (cursor.moveToFirst()) {
+                // Serveur existe déjà, récupérer son ID
+                serverId = cursor.getLong(0);
+            } else {
+                // Ajouter le nouveau serveur
+                ContentValues serverValues = new ContentValues();
+                serverValues.put(COLUMN_NAME, name);
+                serverValues.put(COLUMN_IP, ip);
+                serverValues.put(COLUMN_MOTD, motd);
+                serverId = db.insert(DBContract.FormServers.TABLE_NAME, null, serverValues);
+            }
+            cursor.close();
+
+            // Créer la relation utilisateur-serveur si elle n'existe pas déjà
+            if (serverId != -1) {
+                ContentValues relationValues = new ContentValues();
+                relationValues.put(COLUMN_USER_ID, userId);
+                relationValues.put(COLUMN_SERVER_ID, serverId);
+
+                // Vérifier si la relation existe déjà
+                cursor = db.query(
+                        DBContract.UserServerRelation.TABLE_NAME,
+                        new String[]{_ID},
+                        COLUMN_USER_ID + " = ? AND " + COLUMN_SERVER_ID + " = ?",
+                        new String[]{String.valueOf(userId), String.valueOf(serverId)},
+                        null, null, null
+                );
+
+                if (!cursor.moveToFirst()) {
+                    // La relation n'existe pas, on l'ajoute
+                    db.insert(DBContract.UserServerRelation.TABLE_NAME, null, relationValues);
+                }
+                cursor.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return serverId;
+    }
+
+    public List<Servers> getServeursSuggeres() {
+        List<Servers> serveursSugerres = new ArrayList<>();
+
+        // Liste de serveurs populaires prédéfinis
+        String[][] popularServers = {
+                {"Hypixel", "play.hypixel.net", "Le plus grand serveur Minecraft!"},
+                {"Mineplex", "us.mineplex.com", "Serveur mini-jeux populaire"},
+                {"Badlion", "badlion.net", "Client et serveur compétitif"},
+                {"Cubecraft", "play.cubecraft.net", "Serveur mini-jeux européen"},
+                {"The Hive", "play.hivemc.com", "Serveur mini-jeux populaire"}
+        };
+
+        for (String[] server : popularServers) {
+            Servers s = new Servers();
+            s.setNom(server[0]);
+            s.setIp(server[1]);
+            s.setMotd(server[2]);
+            serveursSugerres.add(s);
+        }
+
+        return serveursSugerres;
+    }
 
 
+
+    public boolean deleteServerByIp(String serverIp) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.beginTransaction();
+        boolean success = false;
+
+        try {
+            // Trouver l'id du serveur en utilisant l'adresse IP
+            String[] columns = {_SERVERID};
+            String selection = COLUMN_IP + " = ?";
+            String[] selectionArgs = {serverIp};
+
+            Cursor cursor = db.query(
+                    DBContract.FormServers.TABLE_NAME,
+                    columns,
+                    selection,
+                    selectionArgs,
+                    null, null, null
+            );
+
+            if (cursor.moveToFirst()) {
+                long serverId = cursor.getLong(0);
+
+                // Supprimer la relation de UserServerRelation
+                int affectedRelations = db.delete(
+                        DBContract.UserServerRelation.TABLE_NAME,
+                        COLUMN_SERVER_ID + " = ?",
+                        new String[]{String.valueOf(serverId)}
+                );
+
+                // Supprimer le serveur de la table Servers
+                int affectedServers = db.delete(
+                        DBContract.FormServers.TABLE_NAME,
+                        _SERVERID + " = ?",
+                        new String[]{String.valueOf(serverId)}
+                );
+
+                // Vérification de si la suppression est un succès.
+                success = affectedRelations > 0 && affectedServers > 0;
+            }
+
+            cursor.close();
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            db.endTransaction();
+            db.close();
+        }
+
+        return success;
+    }
 }
 

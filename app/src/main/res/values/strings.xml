@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Minecraft_Retreiver_Project</string>
+    <string name="no_servers">Image du serveur</string>
+    <string name="no_servers_message">Vous n\'avez aucun serveur</string>
+    <string name="add_first_server">Ajouter un serveur</string>
+    <string name="suggest_servers">Voir les suggestions</string>
 </resources>

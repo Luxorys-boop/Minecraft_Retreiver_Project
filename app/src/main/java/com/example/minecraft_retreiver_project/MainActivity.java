@@ -24,6 +24,14 @@ public class MainActivity extends AppCompatActivity {
     private EditText etPass;
     private TextView registerLink;
 
+    /**
+     * Création de l'activité de connexion (MainActivity). Initialisation de la BDD et mise en place de listener
+     * sur les vues nécessaires. Mise en place d'Intents importants afin d'être regirigé vers une autre activité une fois connecté.
+     * @param savedInstanceState If the activity is being re-initialized after
+     *     previously being shut down then this Bundle contains the data it most
+     *     recently supplied in {@link #onSaveInstanceState}.  <b><i>Note: Otherwise it is null.</i></b>
+     *
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -35,21 +43,29 @@ public class MainActivity extends AppCompatActivity {
         etEmail = findViewById(R.id.email);
         etPass = findViewById(R.id.connPassword);
         registerLink = findViewById(R.id.registerLink);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+
+        // Créer les données exemple
+        db.createExampleUser();
+        db.addExampleServer();
+
+
 
         buttonConn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 int duration = Toast.LENGTH_SHORT;
-                if(db.checkUser(etEmail.getText().toString(), etPass.getText().toString())) {
+                String email = etEmail.getText().toString();
+                String password = etPass.getText().toString();
+
+                if(db.checkUser(email, password)) {
                     Toast.makeText(MainActivity.this, "CONNECTÉ", duration).show();
-                    Intent ___ = new Intent(getApplicationContext(), ___);
-                    startActivity(___);
+                    Intent accueilIntent = new Intent(getApplicationContext(), AccueilActivity.class);
+                    accueilIntent.putExtra("USER_EMAIL", email);
+                    startActivity(accueilIntent);
                 } else {
+                    if (!email.contains("@")) {
+                        Toast.makeText(MainActivity.this, "Email invalide", duration).show();
+                    }
                     Toast.makeText(MainActivity.this, "ERREUR RÉESSAYEZ", duration).show();
                 }
 
